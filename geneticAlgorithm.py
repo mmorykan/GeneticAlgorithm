@@ -2,6 +2,21 @@ import random
 import numpy
 
 
+def create_gene_pool():
+    """
+    Create a fixed amount of genes that one animal can have
+    Assigns random coordinates to each city created
+    """
+    genes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+            '1', '2', '3', '4', '5', '6', '7', '8', '9', '~', '`', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '[', 
+            ']', '{', '}', '|', ';', '<', '>', '/', '?']
+    gene_pool = {}
+    for gene in genes:
+        gene_pool[gene] = City(random.randint(0, 10000), random.randint(0, 10000))
+
+    return gene_pool    
+
+
 class City:
     """
     Creates the city as a pair of x and y coordiantes.
@@ -39,13 +54,12 @@ class Individual:
     def determine_fitness(self):
         total_distance = 0
         gene_sequence = self.get_gene_sequence()
+        print(gene_sequence)
         for gene in range(len(gene_sequence)):
             if gene == len(gene_sequence) - 1:
                 break
             city_1 = self.gene_pool[gene_sequence[gene]]
-            print(city_1.x_coord, city_1.y_coord)
             city_2 = self.gene_pool[gene_sequence[gene + 1]]
-            print(city_2.x_coord, city_2.y_coord)
             total_distance += city_1.get_distance(city_2)
 
         return total_distance
@@ -59,27 +73,44 @@ class Individual:
         return self.determine_fitness()
     
 
-def create_gene_pool():
-    """
-    Create a fixed amount of genes that one animal can have
-    Assigns random coordinates to each city created
-    """
-    genes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-            '1', '2', '3', '4', '5', '6', '7', '8', '9', '~', '`', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '[', 
-            ']', '{', '}', '|', ';', '<', '>', '/', '?']
-    gene_pool = {}
-    for gene in genes:
-        gene_pool[gene] = City(random.randint(0, 10000), random.randint(0, 10000))
+class Population:
 
-    return gene_pool    
+    def __init__(self, gene_pool):
+        self.gene_pool = gene_pool
+        self.individuals = ''
+
+
+    def create_population(self):
+        self.individuals = [Individual(self.gene_pool) for _ in range(100)]
+
+
+    def get_population(self):
+        return self.individuals
+
+
+    def get_fitness_scores(self):
+        list_fitness_scores = []
+        for individual in self.individuals:
+            fitness_score = individual.get_fitness()
+            list_fitness_scores.append(fitness_score)
+        
+        return list_fitness_scores
+
+
+    def get_top_fitness_scores(self):
+        list_fitness_scores = self.get_fitness_scores()
+        for score in list_fitness_scores:
+            pass
 
 
 def main():
     gene_pool = create_gene_pool()
+    all_individuals = [Individual(gene_pool) for _ in range(100)]
+    current_population = Population(all_individuals)
+
     first_individual = Individual(gene_pool)
     sequence = first_individual.create_gene_sequence()
     fitness = first_individual.get_fitness()
-    print(sequence)
     print(fitness)
 
 
