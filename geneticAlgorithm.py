@@ -54,7 +54,6 @@ class Individual:
     def determine_fitness(self):
         total_distance = 0
         gene_sequence = self.get_gene_sequence()
-        print(gene_sequence)
         for gene in range(len(gene_sequence)):
             if gene == len(gene_sequence) - 1:
                 break
@@ -75,13 +74,10 @@ class Individual:
 
 class Population:
 
-    def __init__(self, gene_pool):
+    def __init__(self, gene_pool, size_of_population):
         self.gene_pool = gene_pool
-        self.individuals = ''
-
-
-    def create_population(self):
-        self.individuals = [Individual(self.gene_pool) for _ in range(100)]
+        self.size_of_population = size_of_population
+        self.individuals = [Individual(self.gene_pool) for _ in range(self.size_of_population)]
 
 
     def get_population(self):
@@ -105,13 +101,15 @@ class Population:
 
 def main():
     gene_pool = create_gene_pool()
-    all_individuals = [Individual(gene_pool) for _ in range(100)]
-    current_population = Population(all_individuals)
-
-    first_individual = Individual(gene_pool)
-    sequence = first_individual.create_gene_sequence()
-    fitness = first_individual.get_fitness()
+    # all_individuals = [Individual(gene_pool) for _ in range(100)]
+    current_population = Population(gene_pool, 10)
+    fitness = current_population.get_fitness_scores()
     print(fitness)
+    # print(current_population.get_population())
+    # first_individual = Individual(gene_pool)
+    # sequence = first_individual.create_gene_sequence()
+    # fitness = first_individual.get_fitness()
+    # print(fitness)
 
 
 
