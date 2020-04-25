@@ -40,6 +40,8 @@ class Individual:
     """
     def __init__(self, gene_pool):
         self.gene_pool = gene_pool
+        self.gene_sequence = self.create_gene_sequence()
+        self.fitness = self.determine_fitness()
         
 
     def create_gene_sequence(self):
@@ -48,6 +50,7 @@ class Individual:
         """
         gene_sequence = random.sample(list(self.gene_pool), len(self.gene_pool))
         gene_sequence += gene_sequence[0]
+        self.gene_sequence = gene_sequence
         return gene_sequence
 
 
@@ -61,15 +64,18 @@ class Individual:
             city_2 = self.gene_pool[gene_sequence[gene + 1]]
             total_distance += city_1.get_distance(city_2)
 
+        self.fitness = total_distance
+
         return total_distance
 
 
     def get_gene_sequence(self):
-        return self.create_gene_sequence()
+        return self.gene_sequence
 
 
     def get_fitness(self):
-        return self.determine_fitness()
+        # return self.determine_fitness()
+        return self.fitness
     
 
 class Population:
@@ -85,26 +91,38 @@ class Population:
 
 
     def get_fitness_scores(self):
-        list_fitness_scores = []
+        fitness_scores = {}
         for individual in self.individuals:
             fitness_score = individual.get_fitness()
-            list_fitness_scores.append(fitness_score)
+            fitness_scores[individual] = fitness_score
         
-        return list_fitness_scores
+        return fitness_scores
 
 
     def get_top_fitness_scores(self):
-        list_fitness_scores = self.get_fitness_scores()
-        for score in list_fitness_scores:
-            pass
+        fitness_scores = self.get_fitness_scores()
+        best_individuals = []
+
+        for _ in range(len(fitness_scores) // 2):
+            for individual in fitness_scores:
+                if fitness_scores[individual] == min(fitness_scores.values()):
+                    best_individuals.append(individual)
+                    fitness_scores[individual] = max(fitness_scores.values())
+                    break
+
+        return best_individuals
 
 
 def main():
     gene_pool = create_gene_pool()
-    # all_individuals = [Individual(gene_pool) for _ in range(100)]
     current_population = Population(gene_pool, 10)
-    fitness = current_population.get_fitness_scores()
-    print(fitness)
+    # fitness = current_population.get_fitness_scores()
+    # print(fitness)
+    better = current_population.get_top_fitness_scores()
+    # for i in better:
+    #     print(i)
+    #     print(i.get_fitness())
+    
     # print(current_population.get_population())
     # first_individual = Individual(gene_pool)
     # sequence = first_individual.create_gene_sequence()
