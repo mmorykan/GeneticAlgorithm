@@ -136,7 +136,7 @@ class Population:
         all_parents = self.get_best_fitness_individuals()
         children = []
         for i in range(0, len(all_parents), 2):
-            print(i)
+            # print(i)
             parent_1 = all_parents[i]
             parent_2 = all_parents[i + 1]
 
@@ -152,7 +152,7 @@ class Population:
             for position in range(start_gene_index, end_gene_index):
                 child_gene_sequence.insert(position, parent_2_gene_sequence[position])
             
-            print(child_gene_sequence)
+            # print(child_gene_sequence)
             children.append(Individual(gene_pool=self.gene_pool, gene_sequence=child_gene_sequence))
 
         return children
@@ -161,17 +161,28 @@ class Population:
 def main():
     gene_pool = create_gene_pool()
     population = Population(gene_pool=gene_pool, size_of_population=1000)
-    print(population)
-    next_generation = population.get_best_fitness_individuals()
-    for i in next_generation:
-        print(i)
-        print(i.get_fitness())
-    next_generation = Population(gene_pool=gene_pool, individuals=next_generation)
-    print(next_generation)
-    children = next_generation.mate()
-    for i in children:
-        print(i)
-        print(i.get_fitness())
+
+    while population.size_of_population > 1:
+        next_generation = population.get_best_fitness_individuals()
+        next_generation = Population(gene_pool=gene_pool, size_of_population=len(next_generation), individuals=next_generation)
+        children = next_generation.mate()
+
+        for i in children:
+            print(i.get_fitness())
+
+        population = Population(gene_pool=gene_pool, size_of_population=len(children), individuals=children)
+
+
+    # next_generation = population.get_best_fitness_individuals()
+    # for i in next_generation:
+    #     print(i)
+    #     print(i.get_fitness())
+    # next_generation = Population(gene_pool=gene_pool, individuals=next_generation)
+    # print(next_generation)
+    # children = next_generation.mate()
+    # for i in children:
+    #     print(i)
+    #     print(i.get_fitness())
     
     
 
