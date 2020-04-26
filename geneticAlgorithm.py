@@ -1,5 +1,6 @@
 import random
 import numpy
+from matplotlib import pyplot as plt
 
 
 def create_gene_pool():
@@ -91,11 +92,13 @@ class Population:
     """
     def __init__(self, gene_pool=None, size_of_population=10, individuals=None):
         self.gene_pool = gene_pool
-        self.size_of_population = size_of_population
         if individuals:
             self.individuals = individuals
+            self.size_of_population = len(self.individuals)
         else:
+            self.size_of_population = size_of_population
             self.individuals = [Individual(gene_pool=self.gene_pool) for _ in range(self.size_of_population)]
+            
 
 
     def get_population(self):
@@ -143,7 +146,9 @@ class Population:
         Creates a new individual instance for every child
         """
         all_parents = self.get_best_fitness_individuals()
+        # all_parents = self.individuals
         children = []
+
         for i in range(0, len(all_parents), 2):
             parent_1 = all_parents[i]
             parent_2 = all_parents[i + 1]
@@ -166,16 +171,19 @@ class Population:
 
             # child_gene_sequence = parent_1_gene_sequence[:len(parent_1_gene_sequence) // 2] + parent_2_gene_sequence[len(parent_2_gene_sequence) // 2:]
 
-            # Mating algorithm 3: Probably as good as we are gonna get
+            # Mating algorithm 3: Very greedy algorithm. Probably as good as we are going to get
 
             child_gene_sequence = []
             for i in range(0, len(parent_1_gene_sequence), 2):
                 city_1 = parent_1_gene_sequence[i]
                 city_2 = parent_2_gene_sequence[i]
+
                 next_city_1 = parent_1_gene_sequence[i + 1]
                 next_city_2 = parent_2_gene_sequence[i + 1]
+
                 city_1_to_next = self.gene_pool[city_1].get_distance(self.gene_pool[next_city_1])
                 city_2_to_next = self.gene_pool[city_2].get_distance(self.gene_pool[next_city_2])
+
                 if city_1_to_next < city_2_to_next:
                     child_gene_sequence.extend([city_1, next_city_1])
                 else:
@@ -186,20 +194,46 @@ class Population:
         return children
 
 
+def create_plot(generations, fitness_counts):
+    print(generations)
+    print(fitness_counts)
+    plt.plot(generations, fitness_counts, color='lightblue', linewidth=3)
+    plt.title('Fitness score per generation')
+    plt.xlabel('Generation')
+    plt.ylabel('Fitness')
+    plt.show()
+
+
 def main():
     gene_pool = create_gene_pool()
-    population = Population(gene_pool=gene_pool, size_of_population=2000)
+    population = Population(gene_pool=gene_pool, size_of_population=100)
 
+    generation = []
+    fitness_counts = []
+
+    generation_count = 0
     while population.size_of_population > 1:
-        next_generation = population.get_best_fitness_individuals()
-        next_generation = Population(gene_pool=gene_pool, size_of_population=len(next_generation), individuals=next_generation)
-        children = next_generation.mate()
 
-        for i in children:
-            print('%.2f' %i.get_fitness())
+        children = population.mate()
+        print(len(children))
+        if len(children) == 0:
+            break
 
-        population = Population(gene_pool=gene_pool, size_of_population=len(children), individuals=children)
-    
+        fitness_num = 0
+        for child in children:
+            fitness = child.get_fitness()
+            fitness_num += fitness
+            print(fitness)
+            
+        fitness_counts.append(fitness_num / len(children))
+
+
+        population = Population(gene_pool=gene_pool, individuals=children)
+
+        generation.append(generation_count)
+        generation_count += 1
+
+    create_plot(generation, fitness_counts)    
 
 if __name__ == '__main__':
     main()
