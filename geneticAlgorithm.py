@@ -12,7 +12,7 @@ def create_gene_pool():
             ']', '{', '}', '|', ';', '<', '>', '/', '?']
     gene_pool = {}
     for gene in genes:
-        gene_pool[gene] = City(random.randint(0, 10000), random.randint(0, 10000))
+        gene_pool[gene] = City(random.randint(0, 200), random.randint(0, 200))
 
     return gene_pool    
 
@@ -151,14 +151,35 @@ class Population:
             parent_1_gene_sequence = parent_1.get_gene_sequence()
             parent_2_gene_sequence = parent_2.get_gene_sequence()
 
-            start_gene_index = random.randint(0, len(parent_2_gene_sequence) - 4)
-            end_gene_index = random.randint(start_gene_index + 1, len(parent_2_gene_sequence))
+            # Mating algorithm 1: not working well
 
-            parent_2_genes = parent_2_gene_sequence[start_gene_index : end_gene_index]
-            child_gene_sequence = [gene for gene in parent_1_gene_sequence if gene not in parent_2_genes]
+            # start_gene_index = random.randint(0, len(parent_2_gene_sequence) - 4)
+            # end_gene_index = random.randint(start_gene_index + 1, len(parent_2_gene_sequence))
 
-            for position in range(start_gene_index, end_gene_index):
-                child_gene_sequence.insert(position, parent_2_gene_sequence[position])
+            # parent_2_genes = parent_2_gene_sequence[start_gene_index : end_gene_index]
+            # child_gene_sequence = [gene for gene in parent_1_gene_sequence if gene not in parent_2_genes]
+
+            # for position in range(start_gene_index, end_gene_index):
+            #     child_gene_sequence.insert(position, parent_2_gene_sequence[position])
+
+            # Mating algorithm 2: Not working well
+
+            # child_gene_sequence = parent_1_gene_sequence[:len(parent_1_gene_sequence) // 2] + parent_2_gene_sequence[len(parent_2_gene_sequence) // 2:]
+
+            # Mating algorithm 3: Probably as good as we are gonna get
+
+            child_gene_sequence = []
+            for i in range(0, len(parent_1_gene_sequence), 2):
+                city_1 = parent_1_gene_sequence[i]
+                city_2 = parent_2_gene_sequence[i]
+                next_city_1 = parent_1_gene_sequence[i + 1]
+                next_city_2 = parent_2_gene_sequence[i + 1]
+                city_1_to_next = self.gene_pool[city_1].get_distance(self.gene_pool[next_city_1])
+                city_2_to_next = self.gene_pool[city_2].get_distance(self.gene_pool[next_city_2])
+                if city_1_to_next < city_2_to_next:
+                    child_gene_sequence.extend([city_1, next_city_1])
+                else:
+                    child_gene_sequence.extend([city_2, next_city_2])
             
             children.append(Individual(gene_pool=self.gene_pool, gene_sequence=child_gene_sequence))
 
@@ -167,7 +188,7 @@ class Population:
 
 def main():
     gene_pool = create_gene_pool()
-    population = Population(gene_pool=gene_pool, size_of_population=3000)
+    population = Population(gene_pool=gene_pool, size_of_population=2000)
 
     while population.size_of_population > 1:
         next_generation = population.get_best_fitness_individuals()
@@ -175,7 +196,7 @@ def main():
         children = next_generation.mate()
 
         for i in children:
-            print(i.get_fitness())
+            print('%.2f' %i.get_fitness())
 
         population = Population(gene_pool=gene_pool, size_of_population=len(children), individuals=children)
     
