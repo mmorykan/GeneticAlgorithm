@@ -4,7 +4,7 @@ import numpy
 
 def create_gene_pool():
     """
-    Create a fixed amount of genes that one animal can have
+    Create a fixed amount of genes that one individual can have
     Assigns random coordinates to each city created
     """
     genes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -58,6 +58,9 @@ class Individual:
 
 
     def determine_fitness(self):
+        """
+        Calculate the distance between each city. The total distance is the fitness value
+        """
         total_distance = 0
         gene_sequence = self.get_gene_sequence()
         for gene in range(len(gene_sequence)):
@@ -82,9 +85,9 @@ class Individual:
 
 class Population:
     """
-    Creates a population from only a gene pool and specified size or from a list of individuals
+    Creates a population from a gene pool and specified size or from a gene pool and a list of individuals
     Gets fitness scores and calculates the individuals with the best fitness scores
-    Can make the individuals with the best fitness scores mate and products children individuals
+    Can make the individuals with the best fitness scores mate and produce children individuals
     """
     def __init__(self, gene_pool=None, size_of_population=10, individuals=None):
         self.gene_pool = gene_pool
@@ -100,6 +103,9 @@ class Population:
 
 
     def get_fitness_scores(self):
+        """
+        Return a dictionary of individuals and fitness scores
+        """
         fitness_scores = {}
         for individual in self.individuals:
             fitness_score = individual.get_fitness()
@@ -109,11 +115,14 @@ class Population:
 
 
     def get_best_fitness_individuals(self):
+        """
+        Return the half of individuals with the best fitness scores
+        """
         fitness_scores = self.get_fitness_scores()
         best_individuals = []
 
-        halve_population = len(fitness_scores) // 2
-        if halve_population % 2 == 1:
+        halve_population = len(fitness_scores) // 2 
+        if halve_population % 2 == 1:  # Need to make the half of the population even in order for everyone to be able to mate
             halve_population -= 1
 
         for _ in range(halve_population):
@@ -136,7 +145,6 @@ class Population:
         all_parents = self.get_best_fitness_individuals()
         children = []
         for i in range(0, len(all_parents), 2):
-            # print(i)
             parent_1 = all_parents[i]
             parent_2 = all_parents[i + 1]
 
@@ -152,7 +160,6 @@ class Population:
             for position in range(start_gene_index, end_gene_index):
                 child_gene_sequence.insert(position, parent_2_gene_sequence[position])
             
-            # print(child_gene_sequence)
             children.append(Individual(gene_pool=self.gene_pool, gene_sequence=child_gene_sequence))
 
         return children
@@ -160,7 +167,7 @@ class Population:
 
 def main():
     gene_pool = create_gene_pool()
-    population = Population(gene_pool=gene_pool, size_of_population=1000)
+    population = Population(gene_pool=gene_pool, size_of_population=3000)
 
     while population.size_of_population > 1:
         next_generation = population.get_best_fitness_individuals()
@@ -171,19 +178,6 @@ def main():
             print(i.get_fitness())
 
         population = Population(gene_pool=gene_pool, size_of_population=len(children), individuals=children)
-
-
-    # next_generation = population.get_best_fitness_individuals()
-    # for i in next_generation:
-    #     print(i)
-    #     print(i.get_fitness())
-    # next_generation = Population(gene_pool=gene_pool, individuals=next_generation)
-    # print(next_generation)
-    # children = next_generation.mate()
-    # for i in children:
-    #     print(i)
-    #     print(i.get_fitness())
-    
     
 
 if __name__ == '__main__':
