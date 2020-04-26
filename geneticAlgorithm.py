@@ -41,9 +41,9 @@ class Individual:
     def __init__(self, gene_pool=None, gene_sequence=None):
         self.gene_pool = gene_pool
         if gene_sequence:
-            self.gene_sequence = self.create_gene_sequence()
-        else:
             self.gene_sequence = gene_sequence
+        else:
+            self.gene_sequence = self.create_gene_sequence()
         self.fitness = self.determine_fitness()
         
 
@@ -92,7 +92,7 @@ class Population:
         if individuals:
             self.individuals = individuals
         else:
-            self.individuals = [Individual(self.gene_pool) for _ in range(self.size_of_population)]
+            self.individuals = [Individual(gene_pool=self.gene_pool) for _ in range(self.size_of_population)]
 
 
     def get_population(self):
@@ -112,7 +112,11 @@ class Population:
         fitness_scores = self.get_fitness_scores()
         best_individuals = []
 
-        for _ in range(len(fitness_scores) // 2):
+        halve_population = len(fitness_scores) // 2
+        if halve_population % 2 == 1:
+            halve_population -= 1
+
+        for _ in range(halve_population):
             for individual, score in fitness_scores.items():
                 if score == min(fitness_scores.values()):
                     best_individuals.append(individual)
@@ -132,6 +136,7 @@ class Population:
         all_parents = self.get_best_fitness_individuals()
         children = []
         for i in range(0, len(all_parents), 2):
+            print(i)
             parent_1 = all_parents[i]
             parent_2 = all_parents[i + 1]
 
@@ -145,33 +150,30 @@ class Population:
             child_gene_sequence = [gene for gene in parent_1_gene_sequence if gene not in parent_2_genes]
 
             for position in range(start_gene_index, end_gene_index):
-                child_gene_sequence.insert(position, parent_1_gene_sequence[position])
-
-            children.append(Individual(gene_sequence=child_gene_sequence))
+                child_gene_sequence.insert(position, parent_2_gene_sequence[position])
+            
+            print(child_gene_sequence)
+            children.append(Individual(gene_pool=self.gene_pool, gene_sequence=child_gene_sequence))
 
         return children
 
 
 def main():
     gene_pool = create_gene_pool()
-    population = Population(gene_pool, 10)
-
+    population = Population(gene_pool=gene_pool, size_of_population=1000)
+    print(population)
     next_generation = population.get_best_fitness_individuals()
-    # for i in next_generation:
-    #     print(i)
-    #     print(i.get_fitness())
-    next_generation = Population(individuals=next_generation)
+    for i in next_generation:
+        print(i)
+        print(i.get_fitness())
+    next_generation = Population(gene_pool=gene_pool, individuals=next_generation)
+    print(next_generation)
     children = next_generation.mate()
-    print(children)
-    # again = next_generation.get_best_fitness_individuals()
-    # print(again)
-    # for i in again:
-    #     print(i)
-    #     print(i.get_fitness())
+    for i in children:
+        print(i)
+        print(i.get_fitness())
     
     
-
-
 
 if __name__ == '__main__':
     main()
