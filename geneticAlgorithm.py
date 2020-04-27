@@ -13,7 +13,7 @@ def create_gene_pool():
             ']', '{', '}', '|', ';', '<', '>', '/', '?']
     gene_pool = {}
     for gene in genes:
-        gene_pool[gene] = City(random.randint(0, 200), random.randint(0, 200))
+        gene_pool[gene] = City(random.randint(0, 30), random.randint(0, 30))
 
     return gene_pool    
 
@@ -146,7 +146,6 @@ class Population:
         Creates a new individual instance for every child
         """
         all_parents = self.get_best_fitness_individuals()
-        # all_parents = self.individuals
         children = []
 
         for i in range(0, len(all_parents), 2):
@@ -195,42 +194,54 @@ class Population:
 
 
 def create_plot(generations, fitness_counts):
+    """
+    Graphs the average fitness score for every generation
+    """
     print(generations)
     print(fitness_counts)
     plt.plot(generations, fitness_counts, color='lightblue', linewidth=3)
     plt.title('Fitness score per generation')
     plt.xlabel('Generation')
     plt.ylabel('Fitness')
+    plt.grid(True)
     plt.show()
 
 
 def main():
+    # Create gene pool and beginning population
     gene_pool = create_gene_pool()
-    population = Population(gene_pool=gene_pool, size_of_population=100)
+    population = Population(gene_pool=gene_pool, size_of_population=3000)
 
     generation = []
     fitness_counts = []
 
     generation_count = 0
     while population.size_of_population > 1:
+        # Get all the individuals in the population
+        generation.append(generation_count)
 
-        children = population.mate()
-        print(len(children))
-        if len(children) == 0:
-            break
+        individuals = population.get_population()
+        print(individuals)
+        print(len(individuals))
 
         fitness_num = 0
-        for child in children:
-            fitness = child.get_fitness()
+        for individual in individuals:
+            # Get the fitness score of each individual in the children population
+            fitness = individual.get_fitness()
             fitness_num += fitness
             print(fitness)
-            
-        fitness_counts.append(fitness_num / len(children))
+        
+        # Calculate the average for the population in order to graph later
+        fitness_counts.append(fitness_num / len(individuals))
 
-
+        #Create the new population as the children after mating the best half of the population
+        children = population.mate()
+        if len(children) == 0:
+            break
         population = Population(gene_pool=gene_pool, individuals=children)
+        print(population.size_of_population)
 
-        generation.append(generation_count)
+        # Increment generation
         generation_count += 1
 
     create_plot(generation, fitness_counts)    
