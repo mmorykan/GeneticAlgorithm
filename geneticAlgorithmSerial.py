@@ -1,5 +1,6 @@
 import random
 import numpy
+import time
 from matplotlib import pyplot as plt
 
 
@@ -135,7 +136,7 @@ class Population:
         return best_individuals
 
 
-    def mate(self):
+    def mate(self):  # Distribute this function maybe
         """
         Gets the best individuals from the population 
         Takes a random subset of the second parents gene sequence and copies it directly into a copy of the 
@@ -184,6 +185,8 @@ class Population:
                     child_gene_sequence.extend([city_1, next_city_1])
                 else:
                     child_gene_sequence.extend([city_2, next_city_2])
+
+                child_gene_sequence[-1] = child_gene_sequence[0]
             
             children.append(Individual(gene_pool=self.gene_pool, gene_sequence=child_gene_sequence))
 
@@ -197,17 +200,18 @@ def create_plot(generations, fitness_counts):
     print(generations)
     print(fitness_counts)
     plt.plot(generations, fitness_counts, color='lightblue', linewidth=3)
-    plt.title('Fitness score per generation')
+    plt.title('Fitness Score per Generation')
     plt.xlabel('Generation')
-    plt.ylabel('Fitness')
+    plt.ylabel('Fitness Score')
     plt.grid(True)
     plt.show()
 
 
 def main():
+    start = time.monotonic()
     # Create gene pool and beginning population
     gene_pool = create_gene_pool()
-    population = Population(gene_pool=gene_pool, size_of_population=100)
+    population = Population(gene_pool=gene_pool, size_of_population=2000)
 
     generation = []
     fitness_counts = []
@@ -229,14 +233,14 @@ def main():
         fitness_counts.append(fitness_num / len(individuals))
 
         #Create the new population as the children after mating the best half of the population
-        children = population.mate()
+        children = population.mate()  # Possibly distribute this part
         if len(children) == 0:
             break
         population = Population(gene_pool=gene_pool, individuals=children)
 
         # Increment generation
         generation_count += 1
-
+    print(time.monotonic() - start)
     # Plot the average fitness score per generation
     create_plot(generation, fitness_counts)    
 

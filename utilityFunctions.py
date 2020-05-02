@@ -57,16 +57,10 @@ class Individual:
         return total_distance
 
 
-    # def create_fitness(self):
-    #     if self.fitness == 0:
-    #         fitness = determine_fitness(self.gene_sequence, self.gene_pool)
-    #         self.fitness = fitness
-    #     return self.fitness
-
-
     def get_gene_sequence(self):
         return self.gene_sequence
 
 
     def get_fitness(self):
         return self.fitness
+

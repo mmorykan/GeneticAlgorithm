@@ -7,80 +7,42 @@ app = celery.Celery('genetics')
 app.config_from_object('config')
 
 
-# class City:
-#     """
-#     Creates the city as a pair of x and y coordiantes.
-#     Can calculate the distance between two cities
-#     """
-#     def __init__(self, x_coord, y_coord):
-#         self.x_coord = x_coord
-#         self.y_coord = y_coord
-
-
-#     def get_distance(self, city):
-#         x_distance = abs(self.x_coord - city.x_coord)
-#         y_distance = abs(self.y_coord - city.y_coord)
-#         return numpy.sqrt(x_distance**2 + y_distance**2)
-
-
-# @app.task
-# def determine_fitness(gene_sequence, gene_pool):
-#     total_distance = 0
-#     for gene in range(len(gene_sequence) - 1):
-#         city_1 = gene_pool[gene_sequence[gene]]
-#         city_2 = gene_pool[gene_sequence[gene + 1]]
-#         total_distance += city_1.get_distance(city_2)
-
-#     return total_distance
-
-# class Individual:
-#     """
-#     Creates an individual by creating its own gene sequence
-#     Calculates the fitness quality of an individual
-#     """
-#     def __init__(self, gene_pool=None, gene_sequence=None):
-#         self.gene_pool = gene_pool
-#         if gene_sequence:
-#             self.gene_sequence = gene_sequence
-#         else:
-#             self.gene_sequence = self.create_gene_sequence()
-#         #self.fitness = self.determine_fitness()  # Distribute this step. Maybe send the gene sequence and the gene pool
-#         self.fitness = 0
-
-
-#     def create_gene_sequence(self):
-#         """
-#         Creates one individual by randomly taking a sample from the gene pool and adding the home city on the end
-#         """
-#         gene_sequence = random.sample(list(self.gene_pool), len(self.gene_pool))
-#         gene_sequence += gene_sequence[0]
-#         self.gene_sequence = gene_sequence
-#         return gene_sequence
-
-
-    # def determine_fitness(self):
-    #     """
-    #     Calculate the distance between each city. The total distance is the fitness value
-    #     """
-    #     total_distance = 0
-    #     gene_sequence = self.get_gene_sequence()
-    #     for gene in range(len(gene_sequence) - 1):
-    #         city_1 = self.gene_pool[gene_sequence[gene]]
-    #         city_2 = self.gene_pool[gene_sequence[gene + 1]]
-    #         total_distance += city_1.get_distance(city_2)
-
-    #     self.fitness = total_distance
-
-    #     return total_distance
-
-
-    # def get_fitness(self):
-    #     return self.fitness
-
-
 @app.task
 def get_fitness_scores(individuals):
     return individuals.get_fitness()
 
 
+@app.task
+def mating(all_parents, gene_pool):
+    children = []
+    for i in range(0, len(all_parents), 2):
+        parent_1 = all_parents[i]
+        parent_2 = all_parents[i + 1]
+
+        parent_1_gene_sequence = parent_1.get_gene_sequence()
+        parent_2_gene_sequence = parent_2.get_gene_sequence()
+
+
+        child_gene_sequence = []
+        for i in range(0, len(parent_1_gene_sequence), 2):
+            city_1 = parent_1_gene_sequence[i]
+            city_2 = parent_2_gene_sequence[i]
+
+            next_city_1 = parent_1_gene_sequence[i + 1]
+            next_city_2 = parent_2_gene_sequence[i + 1]
+
+            city_1_to_next = gene_pool[city_1].get_distance(gene_pool[next_city_1])
+            city_2_to_next = gene_pool[city_2].get_distance(gene_pool[next_city_2])
+
+            if city_1_to_next < city_2_to_next:
+                child_gene_sequence.extend([city_1, next_city_1])
+            else:
+                child_gene_sequence.extend([city_2, next_city_2])
+
+            child_gene_sequence[-1] = child_gene_sequence[0]
+        
+        children.append(Individual(gene_pool=gene_pool, gene_sequence=child_gene_sequence))
+
+    return children
+    
 app.conf.task_serializer = 'pickle'

@@ -1,7 +1,8 @@
 import random
 import numpy
+import time
 import geneticTasks
-from geneticTasks import get_fitness_scores
+from geneticTasks import get_fitness_scores, mating
 from matplotlib import pyplot as plt
 from utilityFunctions import Individual, City
 
@@ -112,13 +113,17 @@ class Population:
         return self.individuals
 
 
-    def get_fitness_scores(self): # Distribute this with map
+    def get_fitness_scores(self): # Distributed
         """
         Return a dictionary of individuals and fitness scores
         """
-        result = ~get_fitness_scores.map(self.get_population())
-        print(result)
-        return result # This part is the last part fixed
+        fitness = {}
+        results = ~get_fitness_scores.map(self.get_population())
+        print(results)
+        for i in range(len(results)):
+            fitness[self.individuals[i]] = results[i]
+            
+        return fitness
 
 
     def get_best_fitness_individuals(self):
@@ -150,49 +155,37 @@ class Population:
         Creates a new individual instance for every child
         """
         all_parents = self.get_best_fitness_individuals()
-        children = []
+        children_list = []
+        
+        children = mating.delay(all_parents, self.gene_pool).get()
 
-        for i in range(0, len(all_parents), 2):
-            parent_1 = all_parents[i]
-            parent_2 = all_parents[i + 1]
+        # for i in range(0, len(all_parents), 2):
+        #     parent_1 = all_parents[i]
+        #     parent_2 = all_parents[i + 1]
 
-            parent_1_gene_sequence = parent_1.get_gene_sequence()
-            parent_2_gene_sequence = parent_2.get_gene_sequence()
+        #     parent_1_gene_sequence = parent_1.get_gene_sequence()
+        #     parent_2_gene_sequence = parent_2.get_gene_sequence()
 
-            # Mating algorithm 1: not working well
 
-            # start_gene_index = random.randint(0, len(parent_2_gene_sequence) - 4)
-            # end_gene_index = random.randint(start_gene_index + 1, len(parent_2_gene_sequence))
+        #     child_gene_sequence = []
+        #     for i in range(0, len(parent_1_gene_sequence), 2):
+        #         city_1 = parent_1_gene_sequence[i]
+        #         city_2 = parent_2_gene_sequence[i]
 
-            # parent_2_genes = parent_2_gene_sequence[start_gene_index : end_gene_index]
-            # child_gene_sequence = [gene for gene in parent_1_gene_sequence if gene not in parent_2_genes]
+        #         next_city_1 = parent_1_gene_sequence[i + 1]
+        #         next_city_2 = parent_2_gene_sequence[i + 1]
 
-            # for position in range(start_gene_index, end_gene_index):
-            #     child_gene_sequence.insert(position, parent_2_gene_sequence[position])
+        #         city_1_to_next = self.gene_pool[city_1].get_distance(self.gene_pool[next_city_1])
+        #         city_2_to_next = self.gene_pool[city_2].get_distance(self.gene_pool[next_city_2])
 
-            # Mating algorithm 2: Not working well
+        #         if city_1_to_next < city_2_to_next:
+        #             child_gene_sequence.extend([city_1, next_city_1])
+        #         else:
+        #             child_gene_sequence.extend([city_2, next_city_2])
 
-            # child_gene_sequence = parent_1_gene_sequence[:len(parent_1_gene_sequence) // 2] + parent_2_gene_sequence[len(parent_2_gene_sequence) // 2:]
-
-            # Mating algorithm 3: Very greedy algorithm. Probably as good as we are going to get
-
-            child_gene_sequence = []
-            for i in range(0, len(parent_1_gene_sequence), 2):
-                city_1 = parent_1_gene_sequence[i]
-                city_2 = parent_2_gene_sequence[i]
-
-                next_city_1 = parent_1_gene_sequence[i + 1]
-                next_city_2 = parent_2_gene_sequence[i + 1]
-
-                city_1_to_next = self.gene_pool[city_1].get_distance(self.gene_pool[next_city_1])
-                city_2_to_next = self.gene_pool[city_2].get_distance(self.gene_pool[next_city_2])
-
-                if city_1_to_next < city_2_to_next:
-                    child_gene_sequence.extend([city_1, next_city_1])
-                else:
-                    child_gene_sequence.extend([city_2, next_city_2])
+        #         child_gene_sequence[-1] = child_gene_sequence[0]
             
-            children.append(Individual(gene_pool=self.gene_pool, gene_sequence=child_gene_sequence))
+        #     children.append(Individual(gene_pool=self.gene_pool, gene_sequence=child_gene_sequence))
 
         return children
 
@@ -202,20 +195,27 @@ def create_plot(generations, fitness_counts):
     Graphs the average fitness score for every generation
     """
     print(generations)
-    print(fitness_counts)
+    print('fitness counts', fitness_counts)
     plt.plot(generations, fitness_counts, color='lightblue', linewidth=3)
-    plt.title('Fitness score per generation')
+    plt.title('Fitness Score per Generation')
     plt.xlabel('Generation')
-    plt.ylabel('Fitness')
+    plt.ylabel('Fitness Score')
     plt.grid(True)
     plt.show()
 
 
+def average_fitnesses(individuals):  # Distributed
+    all_fitness_scores = ~get_fitness_scores.map(individuals)
+    print(all_fitness_scores)
+    return sum(all_fitness_scores) / len(individuals)
+
+
 def main():
+    start = time.monotonic()
     # Create gene pool and beginning population
     gene_pool = create_gene_pool()
     population = Population(gene_pool=gene_pool, size_of_population=100)  # Split size of population into multiple parts and then join together into one population
-
+    # creates all individuals and puts it into list
     generation = []
     fitness_counts = []
 
@@ -224,18 +224,11 @@ def main():
         # Get all the individuals in the population
         generation.append(generation_count)
         individuals = population.get_population()
-
-        fitness_num = 0
-        for individual in individuals:
-            # Get the fitness score of each individual in the children population
-            fitness = individual.get_fitness()
-            fitness_num += fitness
-            print(fitness)
         
         # Calculate the average for the population in order to graph later
-        fitness_counts.append(fitness_num / len(individuals))
+        fitness_counts.append(average_fitnesses(individuals))
 
-        #Create the new population as the children after mating the best half of the population
+        # Create the new population as the children after mating the best half of the population
         children = population.mate()
         if len(children) == 0:
             break
@@ -243,9 +236,10 @@ def main():
 
         # Increment generation
         generation_count += 1
-
+    print(time.monotonic() - start)
     # Plot the average fitness score per generation
     create_plot(generation, fitness_counts)    
+
 
 if __name__ == '__main__':
     main()
