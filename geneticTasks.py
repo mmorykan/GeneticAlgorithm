@@ -12,7 +12,7 @@ def get_fitness_scores(individuals):
     return individuals.get_fitness()
 
 
-@app.task
+@app.task(serializer='pickle')
 def mating(all_parents, gene_pool):
     children = []
     for i in range(0, len(all_parents), 2):
@@ -41,8 +41,9 @@ def mating(all_parents, gene_pool):
 
             child_gene_sequence[-1] = child_gene_sequence[0]
         
-        children.append(Individual(gene_pool=gene_pool, gene_sequence=child_gene_sequence))
+        children.append(child_gene_sequence)
 
     return children
-    
+
 app.conf.task_serializer = 'pickle'
+
