@@ -14,29 +14,32 @@ def average_fitness(individuals):
 
 
 def main():
+    AMOUNT_OF_GENERATIONS = 5000
+    SIZE_OF_POPULATION = 1000
+
     start = time.monotonic()
     # Create gene pool and beginning population
     gene_pool = create_gene_pool()
-    population = Population(gene_pool=gene_pool, size_of_population=100)
+    population = Population(gene_pool=gene_pool, size_of_population=SIZE_OF_POPULATION)
 
     generation = []
     fitness_counts = []
 
     generation_count = 0
-    while population.size_of_population > 1:
+    # while population.size_of_population > 1:
+    while generation_count <= AMOUNT_OF_GENERATIONS:
         # Get all the individuals in the population
         generation.append(generation_count)
         individuals = population.get_population()
         
         # Calculate the average for the population in order to graph
         fitness_counts.append(average_fitness(individuals))
-
+        
         #Create the next generation by mating the best half of the parent population and keeping the best parents
         next_generation = population.mate() 
         if len(next_generation) == 0:  # If no offspring were produced, then break out of loop
             break
         population = Population(gene_pool=gene_pool, individuals=next_generation)
-
 
         # Increment generation
         generation_count += 1

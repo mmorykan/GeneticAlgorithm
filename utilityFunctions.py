@@ -118,33 +118,43 @@ class Population:
         """
         Return a dictionary of individuals as keys and fitness scores as values
         """
-        fitness_scores = {}
-        for individual in self.individuals:
+        individuals = []
+        fitness_scores = []
+        for individual in self.get_population():
             fitness_score = individual.get_fitness()
-            fitness_scores[individual] = fitness_score
+            individuals.append(individual)
+            fitness_scores.append(fitness_score)
         
-        return fitness_scores
+        return individuals, fitness_scores
 
 
     def get_best_fitness_individuals(self):
         """
         Return the half of individuals in the population with the best fitness scores
         """
-        fitness_scores = self.get_fitness_scores()
-        best_individuals = []
+        individuals, fitness_scores = self.get_fitness_scores()
+        extra_population = []
+        mating_individuals = []
 
         halve_population = len(fitness_scores) // 2 
         if halve_population % 2 == 1:  # Need to make the half of the population even in order for everyone to be able to mate
             halve_population -= 1
 
-        for _ in range(halve_population):
-            for individual, score in fitness_scores.items():
-                if score == min(fitness_scores.values()):   # Find the minimum value (best fitness score) 
-                    best_individuals.append(individual)
-                    fitness_scores[individual] = max(fitness_scores.values())   # Change best individual to worst individual
+
+        partial_population = int(len(fitness_scores) * (3 / 4))
+
+
+        for _ in range(partial_population):
+            for i in range(len(fitness_scores)):
+                if fitness_scores[i] == min(fitness_scores):
+                    if _ >= halve_population:
+                        extra_population.append(individuals[i])
+                    else:
+                        mating_individuals.append(individuals[i])
+                    fitness_scores[i] = max(fitness_scores)
                     break
 
-        return best_individuals
+        return mating_individuals, extra_population
 
 
     def mate(self):
@@ -154,7 +164,7 @@ class Population:
         first parents gene sequence at the same positions. This is the new child gene sequence
         Creates a new individual instance for every child
         """
-        best_individuals = self.get_best_fitness_individuals()
+        best_individuals, extra_population = self.get_best_fitness_individuals()
         children = []
 
         # Iterate over every pair of the best parents
@@ -168,8 +178,8 @@ class Population:
             parent_2_gene_sequence = parent_2.get_gene_sequence()
 
             # Obtain a sample of the second parents gene sequence randomly
-            start_gene_index = random.randint(0, len(parent_2_gene_sequence) - 2)
-            end_gene_index = random.randint(start_gene_index + 1, len(parent_2_gene_sequence))
+            start_gene_index = random.randint(1, len(parent_2_gene_sequence) - 2)
+            end_gene_index = random.randint(start_gene_index + 1, len(parent_2_gene_sequence) - 1)
 
             # Get the correct genes from parent 2 
             parent_2_genes = parent_2_gene_sequence[start_gene_index : end_gene_index]
@@ -191,10 +201,9 @@ class Population:
             children.append(Individual(gene_pool=self.gene_pool, gene_sequence=child_gene_sequence))
 
         # Make the best parents and their children the next generation
-        best_individuals += children
-
+        best_individuals += children + extra_population
+      
         return best_individuals
-
 
 
 def create_plot(generations, fitness_counts):

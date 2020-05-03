@@ -33,8 +33,8 @@ def mating(best_individuals, gene_pool):
         parent_2_gene_sequence = parent_2.get_gene_sequence()
 
         # Obtain a sample of the second parents gene sequence randomly
-        start_gene_index = random.randint(0, len(parent_2_gene_sequence) - 2)
-        end_gene_index = random.randint(start_gene_index + 1, len(parent_2_gene_sequence))
+        start_gene_index = random.randint(1, len(parent_2_gene_sequence) - 2)
+        end_gene_index = random.randint(start_gene_index + 1, len(parent_2_gene_sequence) - 1)
 
         # Get the correct genes from parent 2 
         parent_2_genes = parent_2_gene_sequence[start_gene_index : end_gene_index]
@@ -59,25 +59,32 @@ def mating(best_individuals, gene_pool):
 
 
 @app.task
-def get_best_fitness(fitness_scores):
+def get_best_fitness(individuals_and_fitness_scores):
     """
     Find the best half of the fitness scores from the fitness scores of the whole population
     Return a list of the gene sequences with those fitness scores
     """
-    best_individuals = []
+    individuals, fitness_scores = individuals_and_fitness_scores
+    extra_population = []
+    mating_individuals = []
 
     halve_population = len(fitness_scores) // 2 
     if halve_population % 2 == 1:  # Need to make the half of the population even in order for everyone to be able to mate
         halve_population -= 1
 
-    for _ in range(halve_population):
-        for individual, score in fitness_scores.items():
-            if score == min(fitness_scores.values()):  # Find the individual with the best fitness score
-                best_individuals.append(individual.get_gene_sequence())
-                fitness_scores[individual] = max(fitness_scores.values())   # Set the individual with best score to highest score
-                break
+    partial_population = int(len(fitness_scores) * (3 / 4))
 
-    return best_individuals
+    for _ in range(partial_population):
+            for i in range(len(fitness_scores)):
+                if fitness_scores[i] == min(fitness_scores):
+                    if _ >= halve_population:
+                        extra_population.append(individuals[i].get_gene_sequence())
+                    else:
+                        mating_individuals.append(individuals[i].get_gene_sequence())
+                    fitness_scores[i] = max(fitness_scores)
+                    break
+
+    return mating_individuals, extra_population
 
 
 app.conf.task_serializer = 'pickle'  # Use pickle for all tasks instead of the default JSON
