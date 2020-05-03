@@ -2,7 +2,7 @@ import random
 import numpy
 import time
 import geneticTasks
-from geneticTasks import get_fitness_scores, mating
+from geneticTasks import get_fitness_scores, mating, get_best_fitness
 from matplotlib import pyplot as plt
 from utilityFunctions import Individual, City
 
@@ -20,77 +20,6 @@ def create_gene_pool():
         gene_pool[gene] = City(random.randint(0, 30), random.randint(0, 30))
 
     return gene_pool    
-
-
-# class City:
-#     """
-#     Creates the city as a pair of x and y coordiantes.
-#     Can calculate the distance between two cities
-#     """
-#     def __init__(self, x_coord, y_coord):
-#         self.x_coord = x_coord
-#         self.y_coord = y_coord
-
-
-#     def get_distance(self, city):
-#         x_distance = abs(self.x_coord - city.x_coord)
-#         y_distance = abs(self.y_coord - city.y_coord)
-#         return numpy.sqrt(x_distance**2 + y_distance**2)
-
-        
-# class Individual:
-#     """
-#     Creates an individual by creating its own gene sequence
-#     Calculates the fitness quality of an individual
-#     """
-#     def __init__(self, gene_pool=None, gene_sequence=None):
-#         self.gene_pool = gene_pool
-#         if gene_sequence:
-#             self.gene_sequence = gene_sequence
-#         else:
-#             self.gene_sequence = self.create_gene_sequence()
-#         self.fitness = self.determine_fitness()
-
-
-#     def create_gene_sequence(self):
-#         """
-#         Creates one individual by randomly taking a sample from the gene pool and adding the home city on the end
-#         """
-#         gene_sequence = random.sample(list(self.gene_pool), len(self.gene_pool))
-#         gene_sequence += gene_sequence[0]
-#         self.gene_sequence = gene_sequence
-#         return gene_sequence
-
-
-#     def determine_fitness(self):
-#         """
-#         Calculate the distance between each city. The total distance is the fitness value
-#         """
-#         total_distance = 0
-#         gene_sequence = self.get_gene_sequence()
-#         for gene in range(len(gene_sequence) - 1):
-#             city_1 = self.gene_pool[gene_sequence[gene]]
-#             city_2 = self.gene_pool[gene_sequence[gene + 1]]
-#             total_distance += city_1.get_distance(city_2)
-
-#         self.fitness = total_distance
-
-#         return total_distance
-
-
-#     # def create_fitness(self):
-#     #     if self.fitness == 0:
-#     #         fitness = determine_fitness(self.gene_sequence, self.gene_pool)
-#     #         self.fitness = fitness
-#     #     return self.fitness
-
-
-#     def get_gene_sequence(self):
-#         return self.gene_sequence
-
-
-#     def get_fitness(self):
-#         return self.fitness
     
 
 class Population:
@@ -119,7 +48,6 @@ class Population:
         """
         fitness = {}
         results = ~get_fitness_scores.map(self.get_population())
-        print(results)
         for i in range(len(results)):
             fitness[self.individuals[i]] = results[i]
             
@@ -131,6 +59,10 @@ class Population:
         Return the half of individuals with the best fitness scores
         """
         fitness_scores = self.get_fitness_scores()
+
+        # print('getting best individuals')
+        # best_individuals = get_best_fitness.apply_async((fitness_scores,), serializer='pickle')
+        # print(best_individuals)
         best_individuals = []
 
         halve_population = len(fitness_scores) // 2 
@@ -143,51 +75,25 @@ class Population:
                     best_individuals.append(individual)
                     fitness_scores[individual] = max(fitness_scores.values())
                     break
+        # best_individuals = [Individual(gene_pool=self.gene_pool, gene_sequence=individual_genes) for individual_genes in best_individuals]
 
         return best_individuals
 
 
-    def mate(self):
+    def mate(self):  # Distributed
         """
         Gets the best individuals from the population 
         Takes a random subset of the second parents gene sequence and copies it directly into a copy of the 
         first parents gene sequence at the same positions. This is the new child gene sequence
         Creates a new individual instance for every child
         """
-        all_parents = self.get_best_fitness_individuals()
-        children_list = []
-        
-        children = mating.delay(all_parents, self.gene_pool).get()
+        best_individuals = self.get_best_fitness_individuals()
 
-        # for i in range(0, len(all_parents), 2):
-        #     parent_1 = all_parents[i]
-        #     parent_2 = all_parents[i + 1]
+        children = mating.apply_async(args=(best_individuals, self.gene_pool)).get()
 
-        #     parent_1_gene_sequence = parent_1.get_gene_sequence()
-        #     parent_2_gene_sequence = parent_2.get_gene_sequence()
+        best_individuals += [Individual(gene_pool=self.gene_pool, gene_sequence=child_genes) for child_genes in children]
 
-
-        #     child_gene_sequence = []
-        #     for i in range(0, len(parent_1_gene_sequence), 2):
-        #         city_1 = parent_1_gene_sequence[i]
-        #         city_2 = parent_2_gene_sequence[i]
-
-        #         next_city_1 = parent_1_gene_sequence[i + 1]
-        #         next_city_2 = parent_2_gene_sequence[i + 1]
-
-        #         city_1_to_next = self.gene_pool[city_1].get_distance(self.gene_pool[next_city_1])
-        #         city_2_to_next = self.gene_pool[city_2].get_distance(self.gene_pool[next_city_2])
-
-        #         if city_1_to_next < city_2_to_next:
-        #             child_gene_sequence.extend([city_1, next_city_1])
-        #         else:
-        #             child_gene_sequence.extend([city_2, next_city_2])
-
-        #         child_gene_sequence[-1] = child_gene_sequence[0]
-            
-        #     children.append(Individual(gene_pool=self.gene_pool, gene_sequence=child_gene_sequence))
-
-        return children
+        return best_individuals
 
 
 def create_plot(generations, fitness_counts):
@@ -205,8 +111,10 @@ def create_plot(generations, fitness_counts):
 
 
 def average_fitnesses(individuals):  # Distributed
+    """
+    Calculate the average fitness score for a generation of individuals
+    """
     all_fitness_scores = ~get_fitness_scores.map(individuals)
-    print(all_fitness_scores)
     return sum(all_fitness_scores) / len(individuals)
 
 
@@ -214,7 +122,7 @@ def main():
     start = time.monotonic()
     # Create gene pool and beginning population
     gene_pool = create_gene_pool()
-    population = Population(gene_pool=gene_pool, size_of_population=100)  # Split size of population into multiple parts and then join together into one population
+    population = Population(gene_pool=gene_pool, size_of_population=1000)  # Split size of population into multiple parts and then join together into one population
     # creates all individuals and puts it into list
     generation = []
     fitness_counts = []
@@ -230,12 +138,15 @@ def main():
 
         # Create the new population as the children after mating the best half of the population
         children = population.mate()
+
         if len(children) == 0:
             break
+
         population = Population(gene_pool=gene_pool, individuals=children)
 
         # Increment generation
         generation_count += 1
+
     print(time.monotonic() - start)
     # Plot the average fitness score per generation
     create_plot(generation, fitness_counts)    
