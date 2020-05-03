@@ -9,12 +9,18 @@ app.config_from_object('config')
 
 @app.task
 def get_fitness_scores(individuals):
+    """
+    Return a list of fitness scores for every individual in the population
+    """
     return individuals.get_fitness()
 
 
-@app.task(serializer='pickle')
+@app.task
 def mating(best_individuals, gene_pool):
-
+    """
+    Mate the best individuals from a population using apply_async celery function
+    Returns a list of child gene sequences
+    """
     children = []
      # Iterate over every pair of the best parents
     for i in range(0, len(best_individuals), 2):
@@ -28,7 +34,7 @@ def mating(best_individuals, gene_pool):
 
         # Obtain a sample of the second parents gene sequence randomly
         start_gene_index = random.randint(0, len(parent_2_gene_sequence) - 2)
-        end_gene_index = random.randint(start_gene_index + 1, len(parent_2_gene_sequence) - 1)
+        end_gene_index = random.randint(start_gene_index + 1, len(parent_2_gene_sequence))
 
         # Get the correct genes from parent 2 
         parent_2_genes = parent_2_gene_sequence[start_gene_index : end_gene_index]
@@ -37,14 +43,10 @@ def mating(best_individuals, gene_pool):
 
         # Create the child gene sequence with only the first parents genes
         child_gene_sequence = [gene for gene in parent_1_gene_sequence if gene not in parent_2_genes]
-        child_gene_sequence += [0] * len(parent_2_genes)
 
         # Insert the parent 2 genes into the child gene sequence at the correct positions
-        for position in range(start_gene_index, end_gene_index):
-            child_gene_sequence.insert(position, parent_2_gene_sequence[position])
-
-        del child_gene_sequence[-len(parent_2_genes):]
-        
+        for position, element in enumerate(parent_2_genes, start_gene_index):
+            child_gene_sequence.insert(position, parent_2_gene_sequence[position])        
 
         # Make sure the last city is the same as the beginning city
         if len(child_gene_sequence) != 0:
@@ -58,6 +60,10 @@ def mating(best_individuals, gene_pool):
 
 @app.task
 def get_best_fitness(fitness_scores):
+    """
+    Find the best half of the fitness scores from the fitness scores of the whole population
+    Return a list of the gene sequences with those fitness scores
+    """
     best_individuals = []
 
     halve_population = len(fitness_scores) // 2 
@@ -66,13 +72,13 @@ def get_best_fitness(fitness_scores):
 
     for _ in range(halve_population):
         for individual, score in fitness_scores.items():
-            if score == min(fitness_scores.values()):
+            if score == min(fitness_scores.values()):  # Find the individual with the best fitness score
                 best_individuals.append(individual.get_gene_sequence())
-                fitness_scores[individual] = max(fitness_scores.values())
+                fitness_scores[individual] = max(fitness_scores.values())   # Set the individual with best score to highest score
                 break
 
     return best_individuals
 
 
-app.conf.task_serializer = 'pickle'
+app.conf.task_serializer = 'pickle'  # Use pickle for all tasks instead of the default JSON
 

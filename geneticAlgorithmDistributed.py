@@ -1,30 +1,17 @@
-import random
-import numpy
 import time
-import geneticTasks
 from geneticTasks import get_fitness_scores, mating, get_best_fitness
-from matplotlib import pyplot as plt
-from utilityFunctions import Individual, City, create_gene_pool
+from utilityFunctions import Individual, City, Population, create_gene_pool, create_plot
 
 
-class Population:
+class Generation(Population):
     """
+    Inherits parent class Population
     Creates a population from a gene pool and specified size or from a gene pool and a list of individuals
     Gets fitness scores and calculates the individuals with the best fitness scores
     Can make the individuals with the best fitness scores mate and produce children individuals
     """
     def __init__(self, gene_pool=None, size_of_population=10, individuals=None):
-        self.gene_pool = gene_pool
-        if individuals:
-            self.individuals = individuals
-            self.size_of_population = len(self.individuals)
-        else:
-            self.size_of_population = size_of_population
-            self.individuals = [Individual(gene_pool=self.gene_pool) for _ in range(self.size_of_population)]
-            
-
-    def get_population(self):
-        return self.individuals
+        super().__init__(gene_pool, size_of_population, individuals)
 
 
     def get_fitness_scores(self): # Distributed
@@ -39,28 +26,17 @@ class Population:
         return fitness
 
 
-    def get_best_fitness_individuals(self):
+    def get_best_fitness_individuals(self):  # Distributed
         """
         Return the half of individuals with the best fitness scores
         """
         fitness_scores = self.get_fitness_scores()
 
-        # print('getting best individuals')
-        # best_individuals = get_best_fitness.apply_async((fitness_scores,), serializer='pickle')
-        # print(best_individuals)
-        best_individuals = []
-
-        halve_population = len(fitness_scores) // 2 
-        if halve_population % 2 == 1:  # Need to make the half of the population even in order for everyone to be able to mate
-            halve_population -= 1
-
-        for _ in range(halve_population):
-            for individual, score in fitness_scores.items():
-                if score == min(fitness_scores.values()):
-                    best_individuals.append(individual)
-                    fitness_scores[individual] = max(fitness_scores.values())
-                    break
-        # best_individuals = [Individual(gene_pool=self.gene_pool, gene_sequence=individual_genes) for individual_genes in best_individuals]
+        # Obtain the gene sequences of the best individuals
+        best_individuals = get_best_fitness.apply_async((fitness_scores,)).get()  
+        
+        # Create Individuals from the obtained gene sequences
+        best_individuals = [Individual(gene_pool=self.gene_pool, gene_sequence=individual_genes) for individual_genes in best_individuals]
 
         return best_individuals
 
@@ -74,25 +50,13 @@ class Population:
         """
         best_individuals = self.get_best_fitness_individuals()
 
-        children = mating.apply_async(args=(best_individuals, self.gene_pool)).get()
+        # Mate the best individuals and receive a list of child gene sequences
+        children = mating.apply_async((best_individuals, self.gene_pool)).get()
 
+        # Create a list of individuals from the list of child gene sequences
         best_individuals += [Individual(gene_pool=self.gene_pool, gene_sequence=child_genes) for child_genes in children]
 
         return best_individuals
-
-
-def create_plot(generations, fitness_counts):
-    """
-    Graphs the average fitness score for every generation
-    """
-    print(generations)
-    print('fitness counts', fitness_counts)
-    plt.plot(generations, fitness_counts, color='lightblue', linewidth=3)
-    plt.title('Fitness Score per Generation')
-    plt.xlabel('Generation')
-    plt.ylabel('Fitness Score')
-    plt.grid(True)
-    plt.show()
 
 
 def average_fitnesses(individuals):  # Distributed
@@ -107,13 +71,13 @@ def main():
     start = time.monotonic()
     # Create gene pool and beginning population
     gene_pool = create_gene_pool()
-    population = Population(gene_pool=gene_pool, size_of_population=1000)  # Split size of population into multiple parts and then join together into one population
+    population = Generation(gene_pool=gene_pool, size_of_population=1000)
     # creates all individuals and puts it into list
     generation = []
     fitness_counts = []
 
     generation_count = 0
-    while population.size_of_population > 1:
+    while population.get_size_of_population() > 1:
         # Get all the individuals in the population
         generation.append(generation_count)
         individuals = population.get_population()
@@ -127,7 +91,7 @@ def main():
         if len(children) == 0:
             break
 
-        population = Population(gene_pool=gene_pool, individuals=children)
+        population = Generation(gene_pool=gene_pool, individuals=children)
 
         # Increment generation
         generation_count += 1
