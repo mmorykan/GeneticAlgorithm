@@ -1,6 +1,21 @@
 import random
 import numpy
 
+def create_gene_pool():
+    """
+    Create a fixed amount of genes that one individual can have
+    Assigns random coordinates to each city created
+    """
+    genes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+            '1', '2', '3', '4', '5', '6', '7', '8', '9', '~', '`', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '[', 
+            ']', '{', '}', '|', ';', '<', '>', '/', '?']
+    gene_pool = {}
+    for gene in genes:
+        gene_pool[gene] = City(random.randint(0, 30), random.randint(0, 30))
+
+    return gene_pool    
+
+
 class City:
     """
     Creates the city as a pair of x and y coordiantes.
