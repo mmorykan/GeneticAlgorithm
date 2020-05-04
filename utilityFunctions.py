@@ -38,13 +38,16 @@ class Individual:
     Creates an individual by creating its own gene sequence
     Calculates the fitness quality of an individual
     """
-    def __init__(self, gene_pool=None, gene_sequence=None):
+    def __init__(self, gene_pool, gene_sequence=None, fitness=None):
         self.gene_pool = gene_pool
         if gene_sequence:
             self.gene_sequence = gene_sequence
         else:
             self.gene_sequence = self.create_gene_sequence()
-        self.fitness = self.determine_fitness()
+        if fitness:
+            self.fitness = fitness
+        else:
+            self.fitness = self.determine_fitness()
 
 
     def create_gene_sequence(self):
@@ -145,14 +148,12 @@ class Population:
 
 
         for _ in range(partial_population):
-            for i in range(len(fitness_scores)):
-                if fitness_scores[i] == min(fitness_scores):
-                    if _ >= halve_population:
-                        extra_population.append(individuals[i])
-                    else:
-                        mating_individuals.append(individuals[i])
-                    fitness_scores[i] = max(fitness_scores)
-                    break
+            index = fitness_scores.index(min(fitness_scores))
+            if _ >= halve_population:
+                extra_population.append(individuals[index])
+            else:
+                mating_individuals.append(individuals[index])
+            fitness_scores[index] = max(fitness_scores)
 
         return mating_individuals, extra_population
 

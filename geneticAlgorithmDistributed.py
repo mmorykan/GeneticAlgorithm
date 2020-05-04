@@ -1,5 +1,5 @@
 import time
-from geneticTasks import get_fitness_scores, mating, get_best_fitness
+from geneticTasks import get_fitness_scores, mating
 from utilityFunctions import Individual, City, Population, create_gene_pool, create_plot
 
 
@@ -29,22 +29,6 @@ class Generation(Population):
         return individuals, fitness_scores
 
 
-    def get_best_fitness_individuals(self):  # Distributed
-        """
-        Return the half of individuals with the best fitness scores
-        """
-        individuals_and_fitness = self.get_fitness_scores()
-
-        # Obtain the gene sequences of the best individuals
-        best_individuals, extra_population = get_best_fitness.apply_async((individuals_and_fitness,)).get()  
-        
-        # Create Individuals from the obtained gene sequences
-        best_individuals = [Individual(gene_pool=self.get_gene_pool(), gene_sequence=individual_genes) for individual_genes in best_individuals]
-        extra_population = [Individual(gene_pool=self.get_gene_pool(), gene_sequence=individual_genes) for individual_genes in extra_population]
-
-        return best_individuals, extra_population
-
-
     def mate(self):  # Distributed
         """
         Gets the best individuals from the population 
@@ -54,9 +38,11 @@ class Generation(Population):
         """
         best_individuals, extra_individuals = self.get_best_fitness_individuals()
 
-
         # Mate the best individuals and receive a list of child gene sequences
-        children = mating.apply_async((best_individuals, self.get_gene_pool())).get()
+        children = ~mating.chunks([(best_individuals[i], best_individuals[i + 1]) for i in range(0, len(best_individuals), 2)], 10)
+
+        # Format the the list properly
+        children = children[0]
 
         # Create a list of individuals from the list of child gene sequences
         best_individuals += [Individual(gene_pool=self.gene_pool, gene_sequence=child_genes) for child_genes in children] + extra_individuals
@@ -73,38 +59,41 @@ def average_fitnesses(individuals):  # Distributed
 
 
 def main():
-    AMOUNT_OF_GENERATIONS = 5000
-    SIZE_OF_POPULATION = 1000
+    AMOUNT_OF_GENERATIONS = 10
+    SIZE_OF_POPULATION = 10
 
     start = time.monotonic()
-    # Create gene pool and beginning population
+
+    # Create gene pool and initial population
     gene_pool = create_gene_pool()
     population = Generation(gene_pool=gene_pool, size_of_population=SIZE_OF_POPULATION)
-    # creates all individuals and puts it into list
+
     generation = []
     fitness_counts = []
 
     generation_count = 0
     while generation_count <= AMOUNT_OF_GENERATIONS:
-        # Get all the individuals in the population
+
         generation.append(generation_count)
+
+        # Get all the individuals in the population
         individuals = population.get_population()
         
         # Calculate the average for the population in order to graph later
         fitness_counts.append(average_fitnesses(individuals))
 
-        # Create the new population as the children after mating the best half of the population
+        print('mating')
         children = population.mate()
+        print('done')
 
-        if len(children) == 0:
-            break
-
+        # Create the new population as the children after mating the best half of the population
         population = Generation(gene_pool=gene_pool, individuals=children)
 
         # Increment generation
         generation_count += 1
 
     print(time.monotonic() - start)
+    
     # Plot the average fitness score per generation
     create_plot(generation, fitness_counts)    
 

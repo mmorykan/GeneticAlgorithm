@@ -14,8 +14,8 @@ def average_fitness(individuals):
 
 
 def main():
-    AMOUNT_OF_GENERATIONS = 5000
-    SIZE_OF_POPULATION = 1000
+    AMOUNT_OF_GENERATIONS = 50
+    SIZE_OF_POPULATION = 500
 
     start = time.monotonic()
     # Create gene pool and beginning population
@@ -36,7 +36,9 @@ def main():
         fitness_counts.append(average_fitness(individuals))
         
         #Create the next generation by mating the best half of the parent population and keeping the best parents
+        print('mating', generation_count)
         next_generation = population.mate() 
+        print('done')
         if len(next_generation) == 0:  # If no offspring were produced, then break out of loop
             break
         population = Population(gene_pool=gene_pool, individuals=next_generation)
