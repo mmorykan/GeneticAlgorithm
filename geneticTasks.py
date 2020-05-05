@@ -21,7 +21,6 @@ def mating(parent_1, parent_2):
     Mate the best individuals from a population using apply_async celery function
     Returns a list of child gene sequences
     """
-    # children = []
 
     # Get the two parents' gene sequences
     parent_1_gene_sequence = parent_1.get_gene_sequence()
@@ -47,10 +46,15 @@ def mating(parent_1, parent_2):
     if len(child_gene_sequence) != 0:
         child_gene_sequence[-1] = child_gene_sequence[0]  
         
-    
-    # children.append(child_gene_sequence)
-
     return child_gene_sequence
+
+
+@app.task
+def mutation(individuals):
+    """
+    Mutate the population
+    """
+    individuals.mutate()
 
 
 app.conf.task_serializer = 'pickle'  # Use pickle for all tasks instead of the default JSON

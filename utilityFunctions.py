@@ -76,6 +76,20 @@ class Individual:
         return total_distance
 
 
+    def mutate(self):
+        """
+        Randomly swaps two genes in an individuals gene sequence in order to mutate
+        """
+        gene_sequence = self.get_gene_sequence()
+
+        gene_to_swap = random.randint(1, len(gene_sequence) - 2)
+        gene_to_swap_with = random.randint(1, len(gene_sequence) - 2)
+
+        saved_gene = gene_sequence[gene_to_swap]
+        gene_sequence[gene_to_swap] = gene_sequence[gene_to_swap_with]
+        gene_sequence[gene_to_swap_with] = saved_gene
+
+
     def get_gene_sequence(self):
         return self.gene_sequence
 
@@ -148,12 +162,14 @@ class Population:
 
 
         for _ in range(partial_population):
+            # Gets the index of the best fitness score and saves the individual with that score
             index = fitness_scores.index(min(fitness_scores))
             if _ >= halve_population:
                 extra_population.append(individuals[index])
             else:
                 mating_individuals.append(individuals[index])
             fitness_scores[index] = max(fitness_scores)
+            # fitness_scores.pop(index)
 
         return mating_individuals, extra_population
 
@@ -170,6 +186,7 @@ class Population:
 
         # Iterate over every pair of the best parents
         for i in range(0, len(best_individuals), 2):
+
             # Get two parents
             parent_1 = best_individuals[i]
             parent_2 = best_individuals[i + 1]
@@ -205,6 +222,16 @@ class Population:
         best_individuals += children + extra_population
       
         return best_individuals
+
+
+    def mutate(self, mutation_rate):
+        """
+        Mutate the population if a randomly generated number is less than the mutation rate
+        """
+        if random.random() < mutation_rate:
+            population = self.get_population()
+            for individual in population:
+                individual.mutate(mutation_rate)
 
 
 def create_plot(generations, fitness_counts):

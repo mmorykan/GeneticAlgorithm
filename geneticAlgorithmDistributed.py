@@ -1,5 +1,6 @@
 import time
-from geneticTasks import get_fitness_scores, mating
+import random
+from geneticTasks import get_fitness_scores, mating, mutation
 from utilityFunctions import Individual, City, Population, create_gene_pool, create_plot
 
 
@@ -50,6 +51,13 @@ class Generation(Population):
         return best_individuals
 
 
+    def mutate(self, mutation_rate):
+        if random.random() < mutation_rate:
+            population = self.get_population()
+            ~mutation.map(population)
+
+
+
 def average_fitnesses(individuals):  # Distributed
     """
     Calculate the average fitness score for a generation of individuals
@@ -59,8 +67,9 @@ def average_fitnesses(individuals):  # Distributed
 
 
 def main():
-    AMOUNT_OF_GENERATIONS = 10
-    SIZE_OF_POPULATION = 10
+    AMOUNT_OF_GENERATIONS = 100
+    SIZE_OF_POPULATION = 500
+    MUTATION_RATE = 0.2
 
     start = time.monotonic()
 
@@ -86,14 +95,15 @@ def main():
         children = population.mate()
         print('done')
 
-        # Create the new population as the children after mating the best half of the population
+        # Create the new population as the children after mating the best half of the population and apply mutation
         population = Generation(gene_pool=gene_pool, individuals=children)
+        population.mutate(MUTATION_RATE)
 
         # Increment generation
         generation_count += 1
 
     print(time.monotonic() - start)
-    
+
     # Plot the average fitness score per generation
     create_plot(generation, fitness_counts)    
 

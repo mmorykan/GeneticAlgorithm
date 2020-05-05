@@ -16,6 +16,7 @@ def average_fitness(individuals):
 def main():
     AMOUNT_OF_GENERATIONS = 50
     SIZE_OF_POPULATION = 500
+    MUTATION_RATE = 0.2
 
     start = time.monotonic()
     # Create gene pool and beginning population
@@ -39,14 +40,16 @@ def main():
         print('mating', generation_count)
         next_generation = population.mate() 
         print('done')
-        if len(next_generation) == 0:  # If no offspring were produced, then break out of loop
-            break
+        
+        # Create a new population as the next generation and apply mutation to them
         population = Population(gene_pool=gene_pool, individuals=next_generation)
+        population.mutate(MUTATION_RATE)
 
         # Increment generation
         generation_count += 1
 
     print(time.monotonic() - start)
+    
     # Plot the average fitness score per generation
     create_plot(generation, fitness_counts)    
 
